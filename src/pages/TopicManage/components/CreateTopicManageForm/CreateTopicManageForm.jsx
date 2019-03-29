@@ -126,13 +126,12 @@ export default class CreateTopicManageForm extends Component {
             status: currentData.topic_status == '1'
               ? true
               : false,
-
-             appid:currentData.appid,
-             apprecommend:currentData.isRecommend=='1'?true:false,
-             appbibei:currentData.appbibei == '1' ? true : false,
-             appdetail:currentData.appdetail,
-             isapp:currentData.isapp == '1' ? true : false,
-
+            appid:currentData.appid,
+            apprecommend:currentData.isRecommend=='1'?true:false,
+            appbibei:currentData.appbibei == '1' ? true : false,
+            appdetail:currentData.appdetail,
+            isapp:currentData.isapp == '1' ? true : false,
+            is_hot:currentData.is_hot == '1' ? true : false
           },
           topic_type:currentData.topic_type,
           logoImg: currentData.topic_icon,
@@ -299,15 +298,15 @@ onChangeSelect(value,option){
     that.formRef.validateAll((error, value) => {
       console.log(value);
       if (error) {
-         // 处理表单报错
+        // 处理表单报错
       }
-       // 提交当前填写的数据
-
-      console.log(that.props);
-      console.log(that.formRef.props);
+      // 提交当前填写的数据
+      
+      let newvalue = {...that.formRef.props.value}
+      newvalue.is_hot = newvalue.is_hot ? '1' : '2'
 
       const dataAry = {
-        ...that.formRef.props.value,
+        ...newvalue,
         icon: that.state.logoImg,
         guest_imgs: that.state.logoImg1,
         share:that.state.logoImg2,
@@ -807,6 +806,17 @@ onChangeSelect(value,option){
                     dataSource={list}
                     onChange={this.cateOnChange.bind(this)}
                   />
+                </IceFormBinder>
+              </Col>
+            </Row>
+
+            <Row style={styles.formItem}>
+              <Col xxs="6" s="2" l="2" style={styles.formLabel}>
+                热门：
+              </Col>
+              <Col s="12" l="10">
+                <IceFormBinder name="is_hot">
+                  <SwitchForForm defaultChecked={this.state.value.is_hot}/>
                 </IceFormBinder>
               </Col>
             </Row>

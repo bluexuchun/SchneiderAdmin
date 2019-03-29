@@ -7,7 +7,9 @@ import {
   Select,
   DatePicker,
   Grid,
-  Icon
+  Icon,
+  Feedback,
+  Dialog
 } from '@icedesign/base';
 import IceContainer from '@icedesign/container';
 import IceImg from '@icedesign/img';
@@ -61,6 +63,8 @@ export default class ComplexTabTable extends Component {
       isMobile: false,
       currentTab: 'solved',
       currentCategory: 1,
+      visible:false,
+      alertTitle:'确认审核通过?'
     };
   }
 
@@ -78,7 +82,7 @@ export default class ComplexTabTable extends Component {
     });
     result.then(function(res) {
       console.log(res)
-      that.setState({allData: res.data,pageNum:res.totle,currentPageNum:res.psize});
+      that.setState({allData: res.data.list,pageNum:res.totle,currentPageNum:res.psize});
     })
   }
 
@@ -111,11 +115,24 @@ export default class ComplexTabTable extends Component {
     e.preventDefault();
   };
 
-  renderStatus = (value) => {
-    return (<IceLabel inverse={false} status="default">
-      {value}
-    </IceLabel>);
-  };
+  renderStatus = (value, index, record) => {
+    let _this = this
+    return (
+      <div status="default" className="labelStyle" style={{background: (record.status == '未审核') ? '#999' : '#289ffa',color:'#fff'}} onClick={() => _this.confrimStatus(record)}>
+        {value}
+      </div>
+    );
+  }
+
+  confrimStatus = (record) => {
+    let id = record.id
+    let alertTitle = record.status == '未审核' ? '确认审核通过?' : '确认审核失败'
+    this.setState({
+      alertTitle,
+      visible:true,
+      currentItem:record
+    })
+  }
 
   changePage = (currentPage) => {
     this.queryCache.page = currentPage;
@@ -124,7 +141,7 @@ export default class ComplexTabTable extends Component {
     .then(function(res){
       that.setState({
         currentPage:currentPage,
-        allData:res.data
+        allData:res.data.list
       })
     })
   };
@@ -142,13 +159,57 @@ export default class ComplexTabTable extends Component {
       result.push({titlenaem: data.appname, AppID: data.id, publishTime: data.createtime, publishStatus: data.appstatus, publishTime: data.createtime});
     }
     return result;
-  };
+  }
+
+  delAnswer = (id) => {
+    let that = this
+    let tid = that.props.newData.history.params.id
+    ajaxTo('api.php?entry=sys&c=chapter&a=answer&do=delete',{id:id})
+    .then(function(res){
+      if(res.status == 1){
+        Feedback.toast.success(res.message);
+        that.getAnswer(tid)
+      }else{
+        Feedback.toast.error(res.message);
+      }
+    })
+  }
+
+  onClose = () => {
+    this.setState({
+      visible: false
+    });
+  }
+
+  onConfirm = () => {
+    let _this = this
+    let questionItem = _this.state.currentItem
+    let tid = _this.props.newData.history.params.id
+    questionItem.status = questionItem.status == '未审核' ? 1 : 2
+    
+    ajaxTo('api.php?entry=sys&c=chapter&a=answer&do=update',{
+      ..._this.state.currentItem,
+      tpid:questionItem.cid
+    }).then((res) => {
+      console.log(res)
+      if(res.status == 1){
+        Feedback.toast.success(res.message);
+        _this.getAnswer(tid)
+        _this.setState({
+          visible: false
+        });
+      }else{
+        Feedback.toast.error(res.message);
+      }
+    })
+  }
 
   newRender = (value, index, record) => {
     console.log(record)
+    let detail = '/answer/'+record.id
     return (
       <div style={{display:'flex',flexDirection:'row'}}>
-        <Link style={aStyle}>编辑</Link>
+        <Link to={detail} style={aStyle}>编辑</Link>
         <Link style={aStyle}>删除</Link>
       </div>
     )
@@ -168,27 +229,17 @@ export default class ComplexTabTable extends Component {
     var currentClass
     if (forData) {
       for (var i = 0; i < forData.length; i++) {
-        currentClass='';
-        for(var k=0;k<forData[i].tags.length;k++){
-          if(forData[i].tags.length==0||forData[i].tags.length==1){
-            currentClass= forData[i].tags.length==0?'':forData[i].tags[0];
-          }else{
-            currentClass+= forData[i].tags[k]+" ";
-          }
-        }
-
         arr.push({
-          'title': forData[i].topic_name,
-          'author': forData[i].guest_name,
-          'starttime': forData[i].begin_time,
-          'endtime': forData[i].end_time,
-          'position':forData[i].guest_position,
-          'status': forData[i].topic_status == '1'
-            ? '开启'
-            : '关闭',
-          'appicon': forData[i].topic_icon,
-          'tag':currentClass,
-          'id':forData[i].id
+          'content': forData[i].content,
+          'uid': forData[i].uid,
+          'time': forData[i].time,
+          'status': forData[i].status == '1'
+            ? '审核通过'
+            : '未审核',
+          'displayorder': forData[i].displayorder,
+          'type':forData[i].type == 1 ? '普通用户' : '专家',
+          'id':forData[i].id,
+          'cid':forData[i].cid
         })
       }
     }
@@ -201,9 +252,15 @@ export default class ComplexTabTable extends Component {
 
     return (<div className="complex-tab-table">
       <IceContainer>
-        <Tab defaultActiveKey="1">
-          {tabs.map(item => (console.log(item), <TabPane key={item.key} tab={item.tab} onClick={this.tabClick} ></TabPane>))}
-        </Tab>
+        <Dialog
+          visible={this.state.visible}
+          onOk={this.onConfirm}
+          onCancel={this.onClose}
+          onClose={this.onClose}
+          title="警告"
+        >
+          <h3>{this.state.alertTitle}</h3>
+        </Dialog>
         <div>
         <IcePanel style={{
           marginTop: "25px"
@@ -213,9 +270,12 @@ export default class ComplexTabTable extends Component {
           </IcePanel.Header>
           <IcePanel.Body>
             <Table dataSource={tableData.data} isLoading={tableData.__loading} className="basic-table" style={styles.basicTable} hasBorder={false} onRowClick={onRowClick}>
-              <Table.Column title="ID" width={150} dataIndex="title"/>
-              <Table.Column title="用户" width={150} dataIndex="author"/>
-              <Table.Column title="回答" width={150} dataIndex="position"/>
+              <Table.Column title="ID" width={150} dataIndex="id"/>
+              <Table.Column title="用户" width={150} dataIndex="uid"/>
+              <Table.Column title="回答" width={150} dataIndex="content"/>
+              <Table.Column title="回复时间" width={150} dataIndex="time"/>
+              <Table.Column title="排序" width={150} dataIndex="displayorder"/>
+              <Table.Column title="用户类型" width={150} dataIndex="type"/>
               <Table.Column title="状态" dataIndex="status" width={85} cell={this.renderStatus}/>
               <Table.Column title="操作" dataIndex="operation" width={150} cell={this.newRender}/>
             </Table>

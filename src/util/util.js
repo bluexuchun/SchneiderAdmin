@@ -1,8 +1,8 @@
 import axios from 'axios'
 const qs = require('qs');
 
-// const baseURL = 'https://bang.schneider-electric.cn/academy/api/'
-const baseURL = 'http://homework.widiazine.cn/schneider/'
+const baseURL = 'https://bang.schneider-electric.cn/academy/api-test/'
+// const baseURL = 'https://homework.widiazine.cn/schneider/'
 
 axios.defaults.baseURL = baseURL;
 

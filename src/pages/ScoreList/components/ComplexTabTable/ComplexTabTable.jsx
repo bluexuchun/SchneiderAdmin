@@ -36,13 +36,9 @@ const TabPane = Tab.TabPane;
 const {Row, Col} = Grid;
 const tabs = [
   {
-    tab: "课程列表",
+    tab: "学分排行",
     key: 0,
     content: "/topicmanagelist"
-  }, {
-    tab: "新建课程",
-    key: 1,
-    content: "/topicmanage/create"
   }
 ];
 
@@ -66,20 +62,12 @@ export default class ComplexTabTable extends Component {
 
   componentWillMount() {
     const that = this;
-    const result = ajaxTo('api.php?entry=sys&c=course&a=course&do=display');
+    const result = ajaxTo('api.php?entry=sys&c=score&a=score&do=display');
     result.then(function(res) {
       console.log(res.data)
 
-      that.setState({allData: res.data,pageNum:res.totle,currentPageNum:res.psize});
+      that.setState({allData: res.data.list,pageNum:res.data.total,currentPageNum:res.data.psize});
     })
-  }
-  //
-  // componentDidMount() {}
-
-  tabClick = (key) => {
-    const url = tabs[key].content;
-    console.log(url);
-    this.props.newData.history.router.push(url);
   }
 
   renderTitle = (value, index, record) => {
@@ -101,7 +89,6 @@ export default class ComplexTabTable extends Component {
         this.setState({allData: oldData})
       }
     }
-    // let newCurrenData=this.state.allData.splice
 
   }
   editItem = (record, e) => {
@@ -134,8 +121,7 @@ export default class ComplexTabTable extends Component {
       console.log(res)
       that.setState({
         currentPage:currentPage,
-        allData:res.data
-
+        allData:res.data.list
       })
     })
 
@@ -166,6 +152,15 @@ export default class ComplexTabTable extends Component {
       }} className="media-side"/>)
   }
 
+  avatarbox = (value, index, record) => {
+    return (
+      <img src={record.headimgurl} style={{
+        width:'30px',
+        height:'30px'
+      }} className="media-side"/>
+    )
+  }
+
   render() {
     let forData = this.state.allData;
     const arr = [];
@@ -173,29 +168,10 @@ export default class ComplexTabTable extends Component {
     var currentClass
     if (forData) {
       for (var i = 0; i < forData.length; i++) {
-        currentClass='';
-        for(var k=0;k<forData[i].tags.length;k++){
-          if(forData[i].tags.length==0||forData[i].tags.length==1){
-            currentClass= forData[i].tags.length==0?'':forData[i].tags[0];
-          }else{
-            currentClass+= forData[i].tags[k]+" ";
-          }
-
-        }
-        console.log(currentClass);
-
         arr.push({
-          'title': forData[i].topic_name,
-          'author': forData[i].guest_name,
-          'starttime': forData[i].begin_time,
-          'endtime': forData[i].end_time,
-          'position':forData[i].guest_position,
-          'status': forData[i].topic_status == '1'
-            ? '开启'
-            : '关闭',
-          'appicon': forData[i].topic_icon,
-          'tag':currentClass,
-          'id':forData[i].id
+          'headimgurl': forData[i].headimgurl,
+          'nickname': forData[i].nickname,
+          'score': forData[i].score
         })
       }
     }
@@ -203,53 +179,32 @@ export default class ComplexTabTable extends Component {
       'currentPage': this.state.currentPage,
       'pageSize': this.state.currentPageNum,
       'data': arr,
-      total:this.state.pageNum
+      'total':this.state.pageNum
     }
 
-    const {tabList} = this.state;
-    const allClassL=[
-      {
-        label:"不限",
-        value:'1'
-      },
-      {
-        label:"待审核",
-        value:'2'
-      },
-      {
-        label:"被禁用",
-        value:'3'
-      },
-      {
-        label:"正常",
-        value:'4'
-      },
-    ]
+    const { tabList } = this.state;
     return (<div className="complex-tab-table">
       <IceContainer>
         <Tab>
           {tabs.map(item => (console.log(item), <TabPane key={item.key} tab={item.tab} onClick={this.tabClick}></TabPane>))}
         </Tab>
         <div>
-
-        <IcePanel style={{
-          marginTop: "25px"
-        }}>
-          <IcePanel.Header>
-            共计{tableData.total}条数据
-          </IcePanel.Header>
-          <IcePanel.Body>
-            <Table dataSource={tableData.data} isLoading={tableData.__loading} className="basic-table" style={styles.basicTable} hasBorder={false} onRowClick={onRowClick}>
-              <Table.Column title="编号" width={150} dataIndex="title"/>
-              <Table.Column title="用户" width={150} dataIndex="author"/>
-              <Table.Column title="总学分" width={150} dataIndex="position"/>
-              <Table.Column title="操作" dataIndex="operation" width={150} cell={this.renderOperations}/>
-            </Table>
-            <div style={styles.pagination}>
-              <Pagination current={tableData.currentPage} pageSize={tableData.pageSize} total={tableData.total} onChange={this.changePage}/>
-            </div>
-          </IcePanel.Body>
-        </IcePanel>
+          <IcePanel>
+            <IcePanel.Header>
+              共计{tableData.total}条数据
+            </IcePanel.Header>
+            <IcePanel.Body>
+              <Table dataSource={tableData.data} isLoading={tableData.__loading} className="basic-table" style={styles.basicTable} hasBorder={false} onRowClick={onRowClick}>
+                <Table.Column title="姓名" width={150} dataIndex="nickname"/>
+                <Table.Column title="头像" width={150} dataIndex="headimgurl" cell={this.avatarbox}/>
+                <Table.Column title="总学分" width={150} dataIndex="score"/>
+                {/* <Table.Column title="操作" dataIndex="operation" width={150} cell={this.renderOperations}/> */}
+              </Table>
+              <div style={styles.pagination}>
+                <Pagination current={tableData.currentPage} pageSize={tableData.pageSize} total={tableData.total} onChange={this.changePage}/>
+              </div>
+            </IcePanel.Body>
+          </IcePanel>
         </div>
       </IceContainer>
     </div>);

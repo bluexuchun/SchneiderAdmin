@@ -58,7 +58,7 @@ export default class CreateTopicManageForm extends Component {
     const that = this;
     const activityId = this.props.history.params.id;
     // 正确获取到activityId的值，去获取他的值
-    ajaxTo('api.php?entry=sys&c=chapter&a=question&do=detail', {'id': activityId}).then((res) => {
+    ajaxTo('api.php?entry=sys&c=chapter&a=answer&do=detail', {'id': activityId}).then((res) => {
       const currentData = res.data;
       // 返回的信息
       that.setState({
@@ -68,7 +68,8 @@ export default class CreateTopicManageForm extends Component {
           uid: currentData.uid,
           time: currentData.time,
           pop: currentData.pop,
-          status: currentData.status
+          status: currentData.status,
+          type:currentData.type
         },
       })
     })
@@ -99,12 +100,11 @@ export default class CreateTopicManageForm extends Component {
 
       const dataAry = {
         ...that.formRef.props.value,
-        id:that.props.history.params.id,
-        tid:that.props.history.params.tid
+        id:that.props.history.params.id
       }
 
       // 修改区
-      const newrequestUrl = 'api.php?entry=sys&c=chapter&a=question&do=edit'
+      const newrequestUrl = 'api.php?entry=sys&c=chapter&a=answer&do=edit'
       const result = ajaxTo(newrequestUrl, dataAry);
       result.then(function(res) {
         Feedback.toast.success(res.message);
@@ -125,8 +125,23 @@ export default class CreateTopicManageForm extends Component {
     var allClassL = [];
 
     const dataSource = [
-      {label:'审核通过', value:'1'},
-      {label:'未审核', value:'2'}
+      {
+        label:'审核通过',
+        value:'1'
+      },{
+        label:'未审核', 
+        value:'2'
+      }
+    ]
+
+    let typeSource = [
+      {
+        label:'普通用户',
+        value:'1'
+      },{
+        label:'专家',
+        value:'2'
+      }
     ]
 
     return (<div className="create-activity-form">
@@ -137,7 +152,7 @@ export default class CreateTopicManageForm extends Component {
           <div>
             <Row style={styles.formItem}>
               <Col xxs="6" s="2" l="2" style={styles.formLabel}>
-                问题：
+                回复内容：
               </Col>
 
               <Col s="12" l="10">
@@ -197,11 +212,22 @@ export default class CreateTopicManageForm extends Component {
 
             <Row style={styles.formItem}>
               <Col xxs="6" s="2" l="2" style={styles.formLabel}>
+                用户类型：
+              </Col>
+              <Col s="12" l="10">
+                <IceFormBinder name="type">
+                  <Select className="next-form-text-align" dataSource={typeSource} onChange={this.onChangeSelect.bind(this)} disabled/>
+                </IceFormBinder>
+              </Col>
+            </Row>
+
+            <Row style={styles.formItem}>
+              <Col xxs="6" s="2" l="2" style={styles.formLabel}>
                 审核状态：
               </Col>
               <Col s="12" l="10">
                 <IceFormBinder name="status">
-                  <Select  className="next-form-text-align" dataSource={dataSource} onChange={this.onChangeSelect.bind(this)}/>
+                  <Select  className="next-form-text-align" dataSource={dataSource} onChange={this.onChangeSelect.bind(this)} disabled/>
                 </IceFormBinder>
               </Col>
             </Row>

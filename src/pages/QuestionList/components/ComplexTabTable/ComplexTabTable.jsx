@@ -8,7 +8,8 @@ import {
   DatePicker,
   Grid,
   Icon,
-  Feedback
+  Feedback,
+  Dialog
 } from '@icedesign/base';
 import IceContainer from '@icedesign/container';
 import IceImg from '@icedesign/img';
@@ -38,10 +39,6 @@ const TabPane = Tab.TabPane;
 const {Row, Col} = Grid;
 const tabs = [
   {
-    tab: "返回",
-    key: 0,
-    content: "/topicmanagelist"
-  }, {
     tab: "问题管理",
     key: 1,
     content: "/questionList/create"
@@ -62,6 +59,8 @@ export default class ComplexTabTable extends Component {
       isMobile: false,
       currentTab: 'solved',
       currentCategory: 1,
+      visible:false,
+      alertTitle:'确认审核通过?'
     };
   }
 
@@ -83,7 +82,7 @@ export default class ComplexTabTable extends Component {
     result.then(function(res) {
       console.log(res)
       if(res.status == 1){
-        that.setState({allData: res.data.list,pageNum:res.data.totle,currentPageNum:res.data.psize});
+        that.setState({allData: res.data.list,pageNum:res.data.total,currentPageNum:res.data.psize});
       }
       
     })
@@ -107,20 +106,34 @@ export default class ComplexTabTable extends Component {
     e.preventDefault();
   };
 
-  renderStatus = (value) => {
-    return (<IceLabel inverse={false} status="default">
-      {value}
-    </IceLabel>);
+  renderStatus = (value, index, record) => {
+    let _this = this
+    return (
+      <div status="default" className="labelStyle" style={{background: (record.status == '未审核') ? '#999' : '#289ffa',color:'#fff'}} onClick={() => _this.confrimStatus(record)}>
+        {value}
+      </div>
+    );
   };
 
+  confrimStatus = (record) => {
+    let id = record.id
+    let alertTitle = record.status == '未审核' ? '确认审核通过?' : '确认审核失败'
+    this.setState({
+      alertTitle,
+      visible:true,
+      currentItem:record
+    })
+  }
+
   changePage = (currentPage) => {
+    let id = this.props.newData.history.params.id
     this.queryCache.page = currentPage;
     const that=this;
-    ajaxTo('api.php?entry=sys&c=course&a=course&do=display',{page:currentPage})
+    ajaxTo('api.php?entry=sys&c=chapter&a=question&do=display',{cid:id,page:currentPage})
     .then(function(res){
       that.setState({
         currentPage:currentPage,
-        allData:res.data
+        allData:res.data.list
       })
     })
   };
@@ -162,6 +175,8 @@ export default class ComplexTabTable extends Component {
       if(res.status == 1){
         Feedback.toast.success(res.message);
         that.getQuestion(tid)
+      }else{
+        Feedback.toast.error(res.message);
       }
     })
   }
@@ -172,6 +187,38 @@ export default class ComplexTabTable extends Component {
         width: '28px'
       }} className="media-side"/>)
   }
+
+  onClose = () => {
+    this.setState({
+      visible: false
+    });
+  };
+
+  onConfirm = () => {
+    let _this = this
+    let questionItem = _this.state.currentItem
+    let tid = _this.props.newData.history.params.id
+    questionItem.status = questionItem.status == '未审核' ? 1 : 2
+    
+    ajaxTo('api.php?entry=sys&c=chapter&a=question&do=update',{
+      ..._this.state.currentItem,
+      tpid:_this.props.newData.history.params.id
+    }).then((res) => {
+      console.log(res)
+      if(res.status == 1){
+        Feedback.toast.success(res.message);
+        _this.getQuestion(tid)
+        _this.setState({
+          visible: false
+        });
+      }else{
+        Feedback.toast.error(res.message);
+      }
+    })
+  }
+  onClick = () => {
+    
+  };
 
   render() {
     let forData = this.state.allData;
@@ -199,6 +246,15 @@ export default class ComplexTabTable extends Component {
     }
 
     return (<div className="complex-tab-table">
+      <Dialog
+        visible={this.state.visible}
+        onOk={this.onConfirm}
+        onCancel={this.onClose}
+        onClose={this.onClose}
+        title="警告"
+      >
+        <h3>{this.state.alertTitle}</h3>
+      </Dialog>
       <IceContainer>
         <Tab defaultActiveKey="1">
           {tabs.map(item => (console.log(item), <TabPane key={item.key} tab={item.tab} onClick={this.tabClick} ></TabPane>))}
@@ -211,7 +267,7 @@ export default class ComplexTabTable extends Component {
             共计{tableData.total}条数据
           </IcePanel.Header>
           <IcePanel.Body>
-            <Table dataSource={tableData.data} isLoading={tableData.__loading} className="basic-table" style={styles.basicTable} hasBorder={false} onRowClick={onRowClick}>
+            <Table dataSource={tableData.data} isLoading={tableData.__loading} className="basic-table" style={styles.basicTable} hasBorder={false}>
               <Table.Column title="ID" width={150} dataIndex="id"/>
               <Table.Column title="问题" width={150} dataIndex="content"/>
               <Table.Column title="用户ID" width={150} dataIndex="uid"/>

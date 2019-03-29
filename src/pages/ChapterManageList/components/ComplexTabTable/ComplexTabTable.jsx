@@ -102,9 +102,11 @@ export default class ComplexTabTable extends Component {
   };
 
   renderOperations = (value, index, record) => {
+    const toQuestion = '/questionList/' + record.id 
     const toUrl = '/chaptermanage/' + record.id;
     return (<div style={styles.complexTabTableOperation}>
-      <Link to={toUrl}>编辑</Link>
+      <Link style={aStyle} to={toQuestion}>提问管理</Link>
+      <Link style={aStyle} to={toUrl}>编辑</Link>
       <div style={aStyle} data-id={record.id} onClick={this.deleteId.bind(this, record.id)}>删除</div>
     </div>);
   };
