@@ -82,7 +82,7 @@ export default class ComplexTabTable extends Component {
     });
     result.then(function(res) {
       console.log(res)
-      that.setState({allData: res.data.list,pageNum:res.totle,currentPageNum:res.psize});
+      that.setState({allData: res.data.list,pageNum:res.data.total,currentPageNum:res.data.psize});
     })
   }
 
@@ -206,11 +206,12 @@ export default class ComplexTabTable extends Component {
 
   newRender = (value, index, record) => {
     console.log(record)
-    let detail = '/answer/'+record.id
+    let _this = this
+    let detail = '/answer/'+ record.id + '/'+  _this.props.newData.history.params.id
     return (
       <div style={{display:'flex',flexDirection:'row'}}>
         <Link to={detail} style={aStyle}>编辑</Link>
-        <Link style={aStyle}>删除</Link>
+        <Link style={aStyle} onClick={() => _this.delAnswer(record.id)}>删除</Link>
       </div>
     )
   };
@@ -222,6 +223,11 @@ export default class ComplexTabTable extends Component {
       }} className="media-side"/>)
   }
 
+  addAnswer = () => {
+    console.log('123')
+    let _this = this
+    this.props.newData.history.router.push('/answer/create/'+_this.props.newData.history.params.id);
+  }
   render() {
     let forData = this.state.allData;
     const arr = [];
@@ -265,6 +271,9 @@ export default class ComplexTabTable extends Component {
         <IcePanel style={{
           marginTop: "25px"
         }}>
+          <Button type="primary" onClick={this.addAnswer} style={{margin:'20px 10px'}}>
+            +新增回复
+          </Button>
           <IcePanel.Header>
             共计{tableData.total}条数据
           </IcePanel.Header>

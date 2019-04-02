@@ -451,7 +451,7 @@ indexRoute: {
   }
 },
 {
-  path: 'answer/:id',
+  path: 'answer/:id/:qid',
   childRoutes: [],
   component: HeaderAsideFooterResponsiveLayout,
   indexRoute: {

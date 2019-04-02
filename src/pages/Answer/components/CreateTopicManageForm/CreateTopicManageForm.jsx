@@ -57,22 +57,29 @@ export default class CreateTopicManageForm extends Component {
   componentWillMount() {
     const that = this;
     const activityId = this.props.history.params.id;
-    // 正确获取到activityId的值，去获取他的值
-    ajaxTo('api.php?entry=sys&c=chapter&a=answer&do=detail', {'id': activityId}).then((res) => {
-      const currentData = res.data;
-      // 返回的信息
+    const qid = this.props.history.params.qid
+    if(activityId == 'create'){
       that.setState({
-        value: {
-          displayorder:currentData.displayorder,
-          content: currentData.content,
-          uid: currentData.uid,
-          time: currentData.time,
-          pop: currentData.pop,
-          status: currentData.status,
-          type:currentData.type
-        },
+        urltype:'add'
       })
-    })
+    }else{
+      // 正确获取到activityId的值，去获取他的值
+      ajaxTo('api.php?entry=sys&c=chapter&a=answer&do=detail', {'id': activityId}).then((res) => {
+        const currentData = res.data;
+        // 返回的信息
+        that.setState({
+          value: {
+            displayorder:currentData.displayorder,
+            content: currentData.content,
+            uid: currentData.uid,
+            time: currentData.time,
+            pop: currentData.pop,
+            status: currentData.status,
+            type:currentData.type
+          },
+        })
+      })
+    }
   }
 
   componentDidMount() {
@@ -91,29 +98,62 @@ export default class CreateTopicManageForm extends Component {
     })
   }
 
+  onChangeType(value,option){
+    let valueOrigin = {...this.state.value}
+    valueOrigin.status = value
+    this.setState({
+      type:valueOrigin
+    })
+  }
+
+  onFormChange = (value) => {
+    this.setState({value});
+  };
+
   submit = () => {
     const that = this;
     that.formRef.validateAll((error, value) => {
       if (error) {
          // 处理表单报错
       }
+      console.log(value)
 
-      const dataAry = {
-        ...that.formRef.props.value,
-        id:that.props.history.params.id
+      if(that.state.urltype == 'add'){
+        console.log(that.formRef.props.value)
+        const dataAry = {
+          ...that.formRef.props.value,
+          qid:that.props.history.params.qid
+        }
+  
+        // 修改区
+        const newrequestUrl = 'api.php?entry=sys&c=chapter&a=answer&do=add'
+        const result = ajaxTo(newrequestUrl, dataAry);
+        result.then(function(res) {
+          Feedback.toast.success(res.message);
+          setTimeout(function() {
+            window.history.go(-1)
+          }, 1000);
+        }, function(value) {
+  
+        })
+      }else{
+        const dataAry = {
+          ...that.formRef.props.value,
+          id:that.props.history.params.id
+        }
+  
+        // 修改区
+        const newrequestUrl = 'api.php?entry=sys&c=chapter&a=answer&do=edit'
+        const result = ajaxTo(newrequestUrl, dataAry);
+        result.then(function(res) {
+          Feedback.toast.success(res.message);
+          setTimeout(function() {
+            window.history.go(-1)
+          }, 1000);
+        }, function(value) {
+  
+        })
       }
-
-      // 修改区
-      const newrequestUrl = 'api.php?entry=sys&c=chapter&a=answer&do=edit'
-      const result = ajaxTo(newrequestUrl, dataAry);
-      result.then(function(res) {
-        Feedback.toast.success(res.message);
-        setTimeout(function() {
-          window.history.go(-1)
-        }, 1000);
-      }, function(value) {
-
-      })
     });
   };
 
@@ -216,7 +256,11 @@ export default class CreateTopicManageForm extends Component {
               </Col>
               <Col s="12" l="10">
                 <IceFormBinder name="type">
-                  <Select className="next-form-text-align" dataSource={typeSource} onChange={this.onChangeSelect.bind(this)} disabled/>
+                  {this.props.history.params.id == 'create' ?
+                    <Select className="next-form-text-align" dataSource={typeSource} onChange={this.onChangeType.bind(this)}/>
+                    :
+                    <Select className="next-form-text-align" dataSource={typeSource} onChange={this.onChangeType.bind(this)} disabled/>
+                  }
                 </IceFormBinder>
               </Col>
             </Row>
@@ -227,25 +271,33 @@ export default class CreateTopicManageForm extends Component {
               </Col>
               <Col s="12" l="10">
                 <IceFormBinder name="status">
-                  <Select  className="next-form-text-align" dataSource={dataSource} onChange={this.onChangeSelect.bind(this)} disabled/>
+                  {this.props.history.params.id == 'create' ?
+                    <Select  className="next-form-text-align" dataSource={dataSource} onChange={this.onChangeSelect.bind(this)}/>
+                    :
+                    <Select  className="next-form-text-align" dataSource={dataSource} onChange={this.onChangeSelect.bind(this)} disabled/>
+                  }
                 </IceFormBinder>
               </Col>
             </Row>
+            
+            {this.props.history.params.id == 'create' ?
+              null
+              :
+              <Row style={styles.formItem}>
+                <Col xxs="6" s="2" l="2" style={styles.formLabel}>
+                  创建时间：
+                </Col>
 
-            <Row style={styles.formItem}>
-              <Col xxs="6" s="2" l="2" style={styles.formLabel}>
-                创建时间：
-              </Col>
-
-              <Col s="12" l="10">
-                <IceFormBinder name="time">
-                  <Input style={{
-                      width: '100%'
-                    }} disabled />
-                </IceFormBinder>
-                <IceFormError name="time"/>
-              </Col>
-            </Row>
+                <Col s="12" l="10">
+                  <IceFormBinder name="time">
+                    <Input style={{
+                        width: '100%'
+                      }} disabled />
+                  </IceFormBinder>
+                  <IceFormError name="time"/>
+                </Col>
+              </Row>
+            }
 
             <Row style={styles.btns}>
               <Col xxs="6" s="2" l="2" style={styles.formLabel}></Col>
